@@ -7,7 +7,7 @@ from particle import meter
 clock = pygame.time.Clock()
 pygame.init()
 
-WINDOW_SIZE = ((GetSystemMetrics(0)//32)*32, (GetSystemMetrics(1)//32)*28)
+WINDOW_SIZE = ((GetSystemMetrics(0)//32)*28, (GetSystemMetrics(1)//32)*22)
 FRAMERATE = 60
 
 font = pygame.font.SysFont("calibri",32)
@@ -67,10 +67,10 @@ while running:
     particle1.blit_time(timer_state, (2*meter, 2*meter))
     particle2.blit_time(timer_state, (WINDOW_SIZE[0]-10*meter, 2*meter))
     # f gravity
-    particle1.blit_info(f'F gravity: {particle1.gravity/meter} m/s^2', (2*meter, 4*meter))
-    particle2.blit_info(f'F gravity: {particle2.gravity/meter} m/s^2', (WINDOW_SIZE[0]-10*meter, 4*meter))
-    # f accel
-    particle1.blit_info(f'F acceleration: {particle1.accel}', (2*meter, 6*meter))
+    particle1.blit_info(f'F gravity: {particle1.gravity/meter} m per s^2', (2*meter, 4*meter))
+    particle2.blit_info(f'F gravity: {particle2.gravity/meter} m per s^2', (WINDOW_SIZE[0]-10*meter, 4*meter))
+    # f net
+    particle1.blit_info(f'F net: {(particle1.gravity * particle1.mass)/meter} newtons', (2*meter, 6*meter))
     screen.blit(font.render(str(FRAMERATE) + ' fps', True, (255,255,255)), (WINDOW_SIZE[0]//2, 2*meter))
 
     pygame.draw.rect(screen, particle1.color, particle1.rect)
