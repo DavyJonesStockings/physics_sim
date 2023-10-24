@@ -1,9 +1,11 @@
-import pygame
-from pygame.locals import *
-from win32api import GetSystemMetrics
-import time
-import math
+'''a'''
+
 from math import sqrt
+# import math
+# import time
+from win32api import GetSystemMetrics
+from pygame.locals import K_w,K_a,K_s,K_d
+import pygame
 
 clock = pygame.time.Clock()
 pygame.init()
@@ -19,22 +21,22 @@ font = pygame.font.SysFont("calibri",32)
 screen = pygame.display.set_mode((WIDTH, HEIGHT), 0, 32)
 
 
-meter = 32
+METER = 32
 
-def isOdd(num):
+def is_odd(num:int):
+    '''returns whether or not the int is an odd number'''
     if num % 2 != 0:
         return True
-    else:
-        return False
-    
-def toggleBool(bool):
-    if bool == False:
+    return False
+def toggle_bool(boolean:bool):
+    '''toggles inputted boolean. True -> False, False -> True'''
+    if boolean is False:
         return True
-    if bool == True:
-        return False
+    return False
 
 
-def distToPx(px1:tuple, px2:tuple):
+def dist_to_px(px1:tuple, px2:tuple):
+    '''returns distance between two points passed in as parameters'''
     # |x2-x1|^2 + |y2-y1|^2 = distance to center point
     # if (x2,y2) is a point in area of light source
     # using distance formula to
@@ -43,25 +45,23 @@ def distToPx(px1:tuple, px2:tuple):
 
 
 class Light(pygame.sprite.Sprite):
-    def __init__(self, luminosity, dimensions:tuple) -> None:
+    '''class of a light emitting object within the program. 
+    can be made with differing levels of luminosity, and different sizes.'''
+    def __init__(self, luminosity:int, dimensions:tuple) -> None:
         super().__init__()
         self.luminosity = luminosity
         self.active = False
 
         self.pos = vec((WIDTH/2, HEIGHT/2))
         self.vel = vec(0,0)
-        self.acc = vec(0,0)
+        self.accel = vec(0,0)
 
         self.rect = pygame.Rect(self.pos.x,self.pos.y, dimensions[0], dimensions[1])
         self.vel = vec(0,0)
 
     def move(self):
+        '''does movement operation for light src'''
         self.accel = vec(0,0)
-
-        if abs(self.vel.x) > 0.3:
-            self.moving = True
-        else:
-            self.moving = False
 
         pressed_keys = pygame.key.get_pressed()
 
@@ -73,11 +73,8 @@ class Light(pygame.sprite.Sprite):
             self.accel.y = ACC
         if pressed_keys[K_d]:
             self.accel.x = ACC
-            self.direction = 'RIGHT'
-        if not pressed_keys[K_a] or not pressed_keys[K_d]:
-            self.direction = None
 
-        self.acc += self.vel * FRIC
+        self.accel += self.vel * FRIC
         self.vel += self.accel
         self.pos += self.vel
 
@@ -91,37 +88,38 @@ class Light(pygame.sprite.Sprite):
             self.pos.y = HEIGHT + self.rect.height/2
 
         self.rect.topleft = self.pos
-   
-    
     def illuminate_area(self):
+        '''add illumination (brightness) to surrounding squares based off of light level.
+        calulates a value 0 to 1 for each pixel in area using luminosity/distance to pixel'''
         # add illumination (brightness) to surrounding squares based off of light level
-        # math for adding light level: light level is an integer. light level will be
-        # luminosity/distToPx
-        light_area = (self.luminosity*meter,self.luminosity*meter)
-        for x in light_area[0]:
-            for y in light_area[1]:
-                light_level = distToPx(self.location, (x,y))/self.luminosity
-                screen.get_at
+        # math for adding light level: light level is a floating point number between 0 and 1.
+        # light level will be luminosity/distToPx
+
+        # light_area = (self.luminosity*METER,self.luminosity*METER)
+        # for x in light_area[0]:
+        #     for y in light_area[1]:
+        #         pass
 
 class Object(): # object to be illuminated - in future
+    '''object created for purpose of having color that is increased with light'''
     def __init__(self, location:tuple, width) -> None:
         pass
 
 
-bulb = Light(3, (1*meter,1*meter))
+bulb = Light(3, (1*METER,1*METER))
 
-running = True
-while running:
+RUNNING = True
+while RUNNING:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            running = False
+            RUNNING = False
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                toggleBool(bulb.active)
+                toggle_bool(bulb.active)
+                print('toggled')
             if event.key == pygame.K_w:
                 bulb.vel = 5
     surf = pygame.Surface((bulb.rect.x, bulb.rect.y))
     screen.blit(surf, bulb.pos)
-            
 
 pygame.quit()
