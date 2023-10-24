@@ -1,4 +1,4 @@
-'''a'''
+'''main file. felt cute, might delete later.'''
 
 from math import sqrt
 # import math
@@ -49,33 +49,35 @@ class Light(pygame.sprite.Sprite):
     can be made with differing levels of luminosity, and different sizes.'''
     def __init__(self, luminosity:int, dimensions:tuple) -> None:
         super().__init__()
+        self.rect = pygame.Rect((WIDTH, HEIGHT), (dimensions[0], dimensions[1]))
+
         self.luminosity = luminosity
         self.active = False
+        self.color = (255,255,255)
 
-        self.pos = vec((WIDTH/2, HEIGHT/2))
+        self.pos = vec(WIDTH/2, HEIGHT/2)
         self.vel = vec(0,0)
-        self.accel = vec(0,0)
+        self.acc = vec(0,0)
 
-        self.rect = pygame.Rect(self.pos.x,self.pos.y, dimensions[0], dimensions[1])
         self.vel = vec(0,0)
 
     def move(self):
         '''does movement operation for light src'''
-        self.accel = vec(0,0)
+        self.acc = vec(0,0)
 
         pressed_keys = pygame.key.get_pressed()
 
         if pressed_keys[K_w]:
-            self.accel.y = -ACC
+            self.acc.y = -ACC
         if pressed_keys[K_a]:
-            self.accel.x = -ACC
+            self.acc.x = -ACC
         if pressed_keys[K_s]:
-            self.accel.y = ACC
+            self.acc.y = ACC
         if pressed_keys[K_d]:
-            self.accel.x = ACC
+            self.acc.x = ACC
 
-        self.accel += self.vel * FRIC
-        self.vel += self.accel
+        self.acc += self.vel * FRIC
+        self.vel += self.acc
         self.pos += self.vel
 
         if self.pos.x > WIDTH + self.rect.width: # Right wall detection
@@ -87,7 +89,8 @@ class Light(pygame.sprite.Sprite):
         if self.pos.y < 0 - self.rect.height: # Top wall detection
             self.pos.y = HEIGHT + self.rect.height/2
 
-        self.rect.topleft = self.pos
+        self.rect.midbottom = self.pos
+
     def illuminate_area(self):
         '''add illumination (brightness) to surrounding squares based off of light level.
         calulates a value 0 to 1 for each pixel in area using luminosity/distance to pixel'''
@@ -117,9 +120,13 @@ while RUNNING:
             if event.key == pygame.K_SPACE:
                 toggle_bool(bulb.active)
                 print('toggled')
-            if event.key == pygame.K_w:
-                bulb.vel = 5
-    surf = pygame.Surface((bulb.rect.x, bulb.rect.y))
-    screen.blit(surf, bulb.pos)
+
+    screen.fill((0,0,0))
+
+    bulb.move()
+    pygame.draw.rect(screen, bulb.color, bulb.rect)
+
+    pygame.display.flip()
+    pygame.display.update()
 
 pygame.quit()
