@@ -8,7 +8,7 @@ from math import sqrt
 clock = pygame.time.Clock()
 pygame.init()
 
-WIDTH = (GetSystemMetrics(0)//32)*32
+WIDTH = (GetSystemMetrics(0)//32)*28
 HEIGHT = (GetSystemMetrics(1)//32)*28
 FRAMERATE = 60
 ACC = .2 # m/s^2
@@ -120,7 +120,8 @@ while running:
                 toggleBool(bulb.active)
             if event.key == pygame.K_w:
                 bulb.vel = 5
-    screen.blit(bulb.rect, bulb.pos)
+    surf = pygame.Surface((bulb.rect.x, bulb.rect.y))
+    screen.blit(surf, bulb.pos)
             
 
 pygame.quit()
