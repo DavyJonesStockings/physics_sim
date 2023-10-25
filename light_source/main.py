@@ -1,7 +1,6 @@
 '''main file. felt cute, might delete later.'''
 
 from math import sqrt
-# import math
 # import time
 from win32api import GetSystemMetrics
 from pygame.locals import K_w,K_a,K_s,K_d
@@ -13,8 +12,8 @@ pygame.init()
 WIDTH = (GetSystemMetrics(0)//32)*28
 HEIGHT = (GetSystemMetrics(1)//32)*28
 FRAMERATE = 60
-ACC = .2 # m/s^2
-FRIC = -0.1
+SPEED = 2 # m/s^2
+# FRIC = -0.1
 
 vec = pygame.math.Vector2
 font = pygame.font.SysFont("calibri",32)
@@ -42,6 +41,15 @@ def dist_to_px(px1:tuple, px2:tuple):
     # using distance formula to
     dist = sqrt( abs( px2[0]-px1[0] )**2 +  abs( px2[1]-px1[1] )**2 )
     return dist
+def mod_pixel(pos:tuple, mod:tuple):
+    '''modifies inputting pixel at pos (x,y) by specified amount mod (r,g,b)'''
+    pixel = list(screen.get_at((pos)))
+    pixel.pop()
+    # adds mod value to pixel. if modded value exceeds 255, value is set to 255.
+    pixel[0] = min(255, pixel[0]+mod[0]) # red
+    pixel[1] = min(255, pixel[1]+mod[1]) # green
+    pixel[2] = min(255, pixel[2]+mod[2]) # blue
+    return tuple(pixel)
 
 
 class Light(pygame.sprite.Sprite):
@@ -57,27 +65,34 @@ class Light(pygame.sprite.Sprite):
 
         self.pos = vec(WIDTH/2, HEIGHT/2)
         self.vel = vec(0,0)
-        self.acc = vec(0,0)
+        # self.acc = vec(0,0)
 
         self.vel = vec(0,0)
 
     def move(self):
         '''does movement operation for light src'''
-        self.acc = vec(0,0)
+        # self.acc = vec(0,0)
 
         pressed_keys = pygame.key.get_pressed()
 
         if pressed_keys[K_w]:
-            self.acc.y = -ACC
-        if pressed_keys[K_a]:
-            self.acc.x = -ACC
-        if pressed_keys[K_s]:
-            self.acc.y = ACC
-        if pressed_keys[K_d]:
-            self.acc.x = ACC
+            self.vel.y = -SPEED
+        elif pressed_keys[K_s]:
+            self.vel.y = SPEED
+        else:
+            self.vel.y = 0
 
-        self.acc += self.vel * FRIC
-        self.vel += self.acc
+        if pressed_keys[K_a]:
+            self.vel.x = -SPEED
+        elif pressed_keys[K_d]:
+            self.vel.x = SPEED
+        else:
+            self.vel.x = 0
+
+
+        if self.vel.x!=0 or self.vel.y!=0:
+            self.vel.scale_to_length(SPEED)
+
         self.pos += self.vel
 
         if self.pos.x > WIDTH + self.rect.width: # Right wall detection
@@ -110,6 +125,7 @@ class Object(): # object to be illuminated - in future
 
 
 bulb = Light(3, (1*METER,1*METER))
+print(mod_pixel((100,100), (50,50,50)))
 
 RUNNING = True
 while RUNNING:
