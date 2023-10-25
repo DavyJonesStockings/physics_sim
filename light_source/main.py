@@ -69,6 +69,12 @@ class Light(pygame.sprite.Sprite):
 
         self.vel = vec(0,0)
 
+    def blit_info(self, info, blit_pos):
+        '''blits any inputted value at any given position'''
+        t = self.font.render(str(info), True, (255,255,255))
+        self.screen.blit(t, blit_pos)
+
+
     def move(self):
         '''does movement operation for light src'''
         # self.acc = vec(0,0)
@@ -117,6 +123,11 @@ class Light(pygame.sprite.Sprite):
         # for x in light_area[0]:
         #     for y in light_area[1]:
         #         pass
+        area_pos = vec(self.rect.topleft)
+        light_area = (2*self.luminosity, 2*self.luminosity)
+        for x in range(2*self.luminosity*METER):
+            for y in range(2*self.luminosity*METER):
+                screen.set_at((int(area_pos[0])+x,int(area_pos[1])+y), (255,0,0))
 
 class Object(): # object to be illuminated - in future
     '''object created for purpose of having color that is increased with light'''
@@ -134,15 +145,20 @@ while RUNNING:
             RUNNING = False
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                toggle_bool(bulb.active)
-                print('toggled')
+                bulb.active = toggle_bool(bulb.active)
 
     screen.fill((0,0,0))
 
+    if bulb.active:
+        bulb.illuminate_area()
     bulb.move()
+    # bulb.blit_info(FRAMERATE)
+
     pygame.draw.rect(screen, bulb.color, bulb.rect)
 
     pygame.display.flip()
     pygame.display.update()
+
+    clock.tick(FRAMERATE)
 
 pygame.quit()
