@@ -12,7 +12,7 @@ pygame.init()
 WIDTH = (GetSystemMetrics(0)//32)*28
 HEIGHT = (GetSystemMetrics(1)//32)*28
 FRAMERATE = 60
-SPEED = 2 # m/s^2
+SPEED = 4 # m/s^2
 # FRIC = -0.1
 
 vec = pygame.math.Vector2
@@ -41,15 +41,13 @@ def dist_to_px(px1:tuple, px2:tuple):
     # using distance formula to
     dist = sqrt( abs( px2[0]-px1[0] )**2 +  abs( px2[1]-px1[1] )**2 )
     return dist
-def mod_pixel(pos:tuple, mod:tuple):
+def mod_pixel(px:list, mod:tuple):
     '''modifies inputting pixel at pos (x,y) by specified amount mod (r,g,b)'''
-    pixel = list(screen.get_at((pos)))
-    pixel.pop()
     # adds mod value to pixel. if modded value exceeds 255, value is set to 255.
-    pixel[0] = min(255, pixel[0]+mod[0]) # red
-    pixel[1] = min(255, pixel[1]+mod[1]) # green
-    pixel[2] = min(255, pixel[2]+mod[2]) # blue
-    return tuple(pixel)
+    px[0] = min(255, px[0]+mod[0]) # red
+    px[1] = min(255, px[1]+mod[1]) # green
+    px[2] = min(255, px[2]+mod[2]) # blue
+    return tuple(px)
 
 
 class Light(pygame.sprite.Sprite):
@@ -73,7 +71,6 @@ class Light(pygame.sprite.Sprite):
         '''blits any inputted value at any given position'''
         t = self.font.render(str(info), True, (255,255,255))
         self.screen.blit(t, blit_pos)
-
 
     def move(self):
         '''does movement operation for light src'''
@@ -119,24 +116,45 @@ class Light(pygame.sprite.Sprite):
         # math for adding light level: light level is a floating point number between 0 and 1.
         # light level will be luminosity/distToPx
 
-        # light_area = (self.luminosity*METER,self.luminosity*METER)
-        # for x in light_area[0]:
-        #     for y in light_area[1]:
-        #         pass
-        area_pos = vec(self.rect.topleft)
-        light_area = (2*self.luminosity, 2*self.luminosity)
-        for x in range(2*self.luminosity*METER):
-            for y in range(2*self.luminosity*METER):
-                screen.set_at((int(area_pos[0])+x,int(area_pos[1])+y), (255,0,0))
+
+        for i in range(self.luminosity):
+            surf = pygame.Surface((
+                2*self.rect.width*(i+1) + METER,
+                2*self.rect.height*(i+1) + METER
+            ))
+            pygame.draw.circle(
+                surf,
+                (255,255,200),
+                # mod_pixel(),
+                (surf.get_width()/2, surf.get_height()/2),
+                surf.get_width()/2
+            )
+
+            surf.set_alpha(255/(i+1))
+
+            screen.blit(surf, (
+                self.rect.center[0]-surf.get_width()/2, self.rect.center[1]-surf.get_height()/2
+            ))
+
+        # NOTE: WORKS, SET ASIDE FOR OTHER TESTING
+        # for i in range(self.luminosity):
+        #     surf = pygame.Surface((
+        #         1*self.rect.width + (i+1)*METER, 1*self.rect.height + (i+1)*METER
+        #     ))
+        #     surf.set_alpha(255/(i+1))
+        #     surf.fill((255,255,220))
+        #     screen.blit(surf, (
+        #         self.rect.center[0]-surf.get_width()/2, self.rect.center[1]-surf.get_height()/2
+        #     ))
 
 class Object(): # object to be illuminated - in future
     '''object created for purpose of having color that is increased with light'''
-    def __init__(self, location:tuple, width) -> None:
+    def __init__(self, location:tuple, dimensions:tuple) -> None:
         pass
 
 
 bulb = Light(3, (1*METER,1*METER))
-print(mod_pixel((100,100), (50,50,50)))
+print(mod_pixel([255,255,200], (50,50,50)))
 
 RUNNING = True
 while RUNNING:
