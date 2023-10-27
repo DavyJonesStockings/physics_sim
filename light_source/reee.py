@@ -125,27 +125,27 @@ class Light(pygame.sprite.Sprite):
         self.rect.midbottom = self.pos
 
     @memoize
-    def illuminate_area(self):
+    def illuminate_area(self) -> pygame.Surface:
         '''add illumination (brightness) to surrounding squares based off of light level.
         calulates a value 0 to 1 for each pixel in area using luminosity/distance to pixel'''
-        circles = [] # pylint: disable=W0621
 
-        for i in range(self.luminosity):
-            surf = pygame.Surface((
-                2*self.rect.width*(i+1) + METER,
-                2*self.rect.height*(i+1) + METER
-            ))
-            pygame.draw.circle(
-                surf,
-                (255,255,200),
-                # mod_pixel(),
-                (surf.get_width()/2, surf.get_height()/2),
-                surf.get_width()/2
-            )
-            surf.set_alpha(abs(100-255/(i+1)))
-            circles.append(surf)
+        print(len((255,255,210,1)))
+        surf = pygame.Surface((
+            3*self.luminosity*METER,
+            3*self.luminosity*METER
+        ))
 
-        return circles
+        draw_circle(
+            surf,
+            self.rect.topleft,
+            (self.rect.topleft[0]+self.luminosity*METER,
+                self.rect.topleft[1]+self.luminosity*METER),
+            (255,255,210,255),
+            (255,255,210,0),
+            Afunc= lambda x : 0.5
+        )
+
+        return surf
 
 class Object(): # object to be illuminated - in future
     '''object created for purpose of having color that is increased with light'''
@@ -178,14 +178,14 @@ while RUNNING:
     screen.fill((0,0,0))
 
     if bulb.active:
-        circles = bulb.illuminate_area()
-        for circle in circles:
-            screen.blit(
-                circle, (
-                bulb.rect.center[0]-circle.get_width()/2,
-                bulb.rect.center[1]-circle.get_height()/2
-                )
+        circle = bulb.illuminate_area()
+        print(circle)
+        screen.blit(
+            circle, (
+                bulb.rect.topleft[0] - circle.get_width()/2,
+                bulb.rect.topleft[1] - circle.get_height()/2
             )
+        )
     bulb.move()
 
     pygame.draw.rect(screen, bulb.color, bulb.rect)
