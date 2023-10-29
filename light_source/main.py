@@ -1,12 +1,12 @@
 '''main file. felt cute, might delete later.'''
 
 from math import sqrt
-# import time
+import math
 from functools import wraps
 from win32api import GetSystemMetrics
 from pygame.locals import K_w,K_a,K_s,K_d
 import pygame
-from gradients import draw_circle
+from gradients import draw_circle, FunctionInterpolator
 
 clock = pygame.time.Clock()
 pygame.init()
@@ -14,12 +14,14 @@ pygame.init()
 WIDTH = (GetSystemMetrics(0)//32)*28
 HEIGHT = (GetSystemMetrics(1)//32)*28
 FRAMERATE = 60
-SPEED = 4 # m/s^2
+SPEED = 5 # m/s^2
 # FRIC = -0.1
 
 vec = pygame.math.Vector2
 font = pygame.font.SysFont("calibri",32)
 screen = pygame.display.set_mode((WIDTH, HEIGHT), 0, 32)
+
+light_cache = {}
 
 
 METER = 32
@@ -37,7 +39,8 @@ def toggle_bool(boolean:bool):
 
 
 def dist_to_px(px1:tuple, px2:tuple):
-    '''returns distance between two points passed in as parameters'''
+    '''returns distance between two points passed in as parameters. returns
+    value in PIXELS'''
     # |x2-x1|^2 + |y2-y1|^2 = distance to center point
     # if (x2,y2) is a point in area of light source
     # using distance formula to
@@ -54,14 +57,13 @@ def mod_pixel(px:list, mod:tuple):
 def memoize(func):
     '''memoization decorator to optimize functions.
     function must return a value for memoization to work.'''
-    cache = {}
 
     @wraps(func)
     def wrapper(*args, **kwargs):
         key = str(args) + str(kwargs)
-        if key not in cache:
-            cache[key] = func(*args, **kwargs)
-        return cache[key]
+        if key not in light_cache:
+            light_cache[key] = func(*args, **kwargs)
+        return light_cache[key]
     return wrapper
 
 
@@ -70,7 +72,7 @@ class Light(pygame.sprite.Sprite):
     can be made with differing levels of luminosity, and different sizes.'''
     def __init__(self, luminosity:int, dimensions:tuple) -> None:
         super().__init__()
-        self.rect = pygame.Rect((WIDTH, HEIGHT), (dimensions[0], dimensions[1]))
+        self.rect = pygame.Rect((WIDTH/2, HEIGHT/2), (dimensions[0], dimensions[1]))
         self.font = pygame.font.SysFont("calibri",32)
 
         self.luminosity = luminosity
@@ -79,7 +81,6 @@ class Light(pygame.sprite.Sprite):
 
         self.pos = vec(WIDTH/2, HEIGHT/2)
         self.vel = vec(0,0)
-        # self.acc = vec(0,0)
 
         self.vel = vec(0,0)
 
@@ -140,7 +141,7 @@ class Light(pygame.sprite.Sprite):
                 surf.get_height()/2+self.luminosity*METER),
             (255,255,210,255),
             (255,255,150,0),
-            Afunc= lambda x : x**(2/3)
+            Afunc= lambda x : x**(2/3),
         )
 
         return surf
@@ -149,19 +150,41 @@ class Object(pygame.sprite.Sprite): # object to be illuminated - in future
     '''object created for purpose of having color that is increased with light'''
     def __init__(self, dimensions:tuple) -> None:
         super().__init__()
-        self.rect = pygame.Rect((WIDTH, HEIGHT), (dimensions[0], dimensions[1]))
-        self.font = pygame.font.SysFont("calibri",32)
-
+        self.rect = pygame.Rect((0,0), (dimensions[0], dimensions[1]))
+        self.surf = pygame.Surface(dimensions)
         self.color = (255,0,0)
 
-        self.pos = vec(2*METER, 2*METER)
+        self.pos = vec(5*METER, 5*METER)
 
-    def update(self):
-        pass
+        pygame.draw.rect(self.surf, self.color, self.rect)
+
+        self.font = pygame.font.SysFont("calibri",32)
+        self.alpha = 0
+
+    def illuminate(self, light_src):
+        '''determines alpha value of object based off of distance to light src'''
+        dist = dist_to_px(
+            (self.pos.x+self.surf.get_width()/2, self.pos.y+self.surf.get_height()/2),
+            light_src.rect.center
+        )
+        # IF light is too far away OR light is not on:
+        if dist > 2*light_src.luminosity*METER or not light_src.active:
+            self.surf.set_alpha(0)
+        else:
+            # interpolates the alpha value by taking the position of the
+            # obj within the light radius of the light source (bulb)
+            color = FunctionInterpolator(
+                255,
+                0,
+                1.5*light_src.luminosity*METER,
+                lambda x : x**(2/3)
+            )
+            # passes current distance from light_src to obj into interpolator
+            self.surf.set_alpha(color.eval(dist))
 
 
-bulb = Light(8, (1*METER,1*METER))
-obj = Object((3*METER,3*METER))
+bulb = Light(6, (1*METER,1*METER))
+obj = Object((2*METER,2*METER))
 print(mod_pixel([255,255,200], (50,50,50)))
 
 
@@ -176,8 +199,10 @@ while RUNNING:
                 bulb.active = toggle_bool(bulb.active)
             if event.key == pygame.K_j:
                 bulb.luminosity += 1
+                light_cache = {}
             if event.key == pygame.K_k:
                 bulb.luminosity -= 1
+                light_cache = {}
 
     # dt = time.time() - last_time
     # dt *= 23
@@ -195,8 +220,12 @@ while RUNNING:
             )
         )
     bulb.move()
+    screen.blit(obj.surf, obj.pos)
 
     pygame.draw.rect(screen, bulb.color, bulb.rect)
+
+    obj.illuminate(bulb)
+    print(obj.rect.center)
 
     pygame.display.flip()
     pygame.display.update()

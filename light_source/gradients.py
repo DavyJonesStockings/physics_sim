@@ -350,7 +350,7 @@ def radial_func(radius, startcolor, endcolor, Rfunc = (lambda x:x), Gfunc = (lam
     bigSurf = pygame.Surface((2*radius, 2*radius)).convert_alpha()
     if len(colorkey)==3:
         colorkey += (0,)
-    bigSurf.fill(colorkey)
+    # bigSurf.fill(colorkey)
     color = ColorInterpolator(radius, startcolor, endcolor, Rfunc, Gfunc, Bfunc, Afunc)
     draw_circle = pygame.draw.circle
     for rad in range(radius, 0, -1):
