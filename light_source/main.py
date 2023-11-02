@@ -1,9 +1,8 @@
 '''main file. felt cute, might delete later.'''
 
 from math import sqrt
-import math
 from functools import wraps
-from win32api import GetSystemMetrics
+import pyautogui
 from pygame.locals import K_w,K_a,K_s,K_d
 import pygame
 from gradients import draw_circle, FunctionInterpolator
@@ -11,18 +10,18 @@ from gradients import draw_circle, FunctionInterpolator
 clock = pygame.time.Clock()
 pygame.init()
 
-WIDTH = (GetSystemMetrics(0)//32)*28
-HEIGHT = (GetSystemMetrics(1)//32)*28
+WIDTH = (pyautogui.size()[0]//32)*28
+HEIGHT = (pyautogui.size()[1]//32)*28
 FRAMERATE = 60
-SPEED = 5 # m/s^2
-# FRIC = -0.1
+SPEED = 8 # m/s^2
+CLICKED = False
 
 vec = pygame.math.Vector2
 font = pygame.font.SysFont("calibri",32)
 screen = pygame.display.set_mode((WIDTH, HEIGHT), 0, 32)
 
 light_cache = {}
-
+objs = []
 
 METER = 32
 
@@ -36,7 +35,13 @@ def toggle_bool(boolean:bool):
     if boolean is False:
         return True
     return False
-
+def is_in_area(area_pos:tuple, coordinate:tuple, area_size:tuple):
+    '''pass in the topleft position of your area, the target coordinate,
+    and the size of the area, and this function will return if the
+    coordinate is in the area.'''
+    if area_pos[0] < coordinate[0] < area_pos[0]+area_size[0]:
+        if area_pos[1] < coordinate[1] < area_pos[1]+area_size[1]:
+            return True
 
 def dist_to_px(px1:tuple, px2:tuple):
     '''returns distance between two points passed in as parameters. returns
@@ -148,21 +153,25 @@ class Light(pygame.sprite.Sprite):
 
 class Object(pygame.sprite.Sprite): # object to be illuminated - in future
     '''object created for purpose of having color that is increased with light'''
-    def __init__(self, dimensions:tuple) -> None:
+    def __init__(self, dimensions:tuple, location:tuple, color:tuple) -> None:
         super().__init__()
         self.rect = pygame.Rect((0,0), (dimensions[0], dimensions[1]))
         self.surf = pygame.Surface(dimensions)
-        self.color = (255,0,0)
+        self.color = color
 
-        self.pos = vec(5*METER, 5*METER)
+        self.pos = vec(location)
 
         pygame.draw.rect(self.surf, self.color, self.rect)
 
         self.font = pygame.font.SysFont("calibri",32)
         self.alpha = 0
+        self.clicked = False
 
-    def illuminate(self, light_src):
-        '''determines alpha value of object based off of distance to light src'''
+        self.surf.set_alpha(self.alpha)
+
+    def illuminate(self, light_src) -> None:
+        '''determines alpha value of object based off of distance to light src. returns nothing,
+        method changes alpha of object upon being called. '''
         dist = dist_to_px(
             (self.pos.x+self.surf.get_width()/2, self.pos.y+self.surf.get_height()/2),
             light_src.rect.center
@@ -182,13 +191,21 @@ class Object(pygame.sprite.Sprite): # object to be illuminated - in future
             # passes current distance from light_src to obj into interpolator
             self.surf.set_alpha(color.eval(dist))
 
+    def drag(self):
+        '''drags the obj if it is being clicked'''
+        mouse_pos = pygame.mouse.get_pos()
+        print(mouse_pos)
+        if CLICKED and is_in_area(self.pos, mouse_pos, self.surf.get_size()):
+            self.pos = vec(mouse_pos[0]-self.surf.get_width()/2,
+                           mouse_pos[1]-self.surf.get_height()/2)
 
 bulb = Light(6, (1*METER,1*METER))
-obj = Object((2*METER,2*METER))
-print(mod_pixel([255,255,200], (50,50,50)))
+obj = Object((5*METER,5*METER),(2*METER,2*METER), (255,0,0))
+obj2 = Object((4*METER,8*METER),(WIDTH-10*METER,HEIGHT-10*METER),(130,0,130))
+objs.append(obj)
+objs.append(obj2)
+print(objs)
 
-
-# last_time = time.time()
 RUNNING = True
 while RUNNING:
     for event in pygame.event.get():
@@ -203,6 +220,10 @@ while RUNNING:
             if event.key == pygame.K_k:
                 bulb.luminosity -= 1
                 light_cache = {}
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            CLICKED = True
+        if event.type == pygame.MOUSEBUTTONUP:
+            CLICKED = False
 
     # dt = time.time() - last_time
     # dt *= 23
@@ -220,12 +241,15 @@ while RUNNING:
             )
         )
     bulb.move()
-    screen.blit(obj.surf, obj.pos)
+    for obj in objs:
+        screen.blit(obj.surf, obj.pos)
+        obj.illuminate(bulb)
+        if CLICKED:
+            obj.drag()
+
 
     pygame.draw.rect(screen, bulb.color, bulb.rect)
 
-    obj.illuminate(bulb)
-    print(obj.rect.center)
 
     pygame.display.flip()
     pygame.display.update()
